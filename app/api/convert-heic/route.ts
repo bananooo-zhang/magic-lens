@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import sharp from 'sharp';
+import convert from 'heic-convert';
 
 export async function POST(req: Request) {
   try {
@@ -14,14 +14,19 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Use sharp to convert to JPEG
-    const jpegBuffer = await sharp(buffer)
-      .toFormat('jpeg', { quality: 80 })
-      .toBuffer();
+    console.log(`🖼️ Processing HEIC file: ${file.name}, size: ${buffer.length} bytes`);
 
-    // Return as Base64 JSON (to be consistent with client logic expecting a string)
-    // Or return blob? Let's return JSON with base64 to match our imageUtils flow easily.
-    const base64 = `data:image/jpeg;base64,${jpegBuffer.toString('base64')}`;
+    // Use heic-convert (WASM) instead of sharp (System Lib)
+    // This is slower but much more compatible with newer iOS HEIC formats
+    // heic-convert returns an ArrayBuffer or Buffer
+    const resultBuffer = await convert({
+      buffer: buffer, 
+      format: 'JPEG',      
+      quality: 0.8         
+    });
+
+    // Convert ArrayBuffer/Buffer to Base64
+    const base64 = `data:image/jpeg;base64,${Buffer.from(resultBuffer).toString('base64')}`;
 
     return NextResponse.json({ image: base64 });
 
