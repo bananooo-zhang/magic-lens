@@ -58,7 +58,7 @@ export function ChatController() {
       const currentImg = getCurrentImage();
       if (!currentImg) throw new Error("No image selected");
 
-      // CALL API (Real implementation next step)
+      // CALL API
       const response = await fetch('/api/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +68,11 @@ export function ChatController() {
         })
       });
 
-      if (!response.ok) throw new Error('API request failed');
+      if (!response.ok) {
+        // Try to parse error message from backend
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `请求失败 (状态码: ${response.status})`);
+      }
       
       const data = await response.json();
       
@@ -79,13 +83,13 @@ export function ChatController() {
           m.id === tempId ? { ...m, content: '修图完成！你可以继续输入指令进行微调。' } : m
         ));
       } else {
-        throw new Error(data.error || 'Failed to generate image');
+        throw new Error(data.error || '未收到图片数据');
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setMessages(prev => prev.map(m => 
-        m.id === tempId ? { ...m, content: '抱歉，修图失败了，请稍后再试。' } : m
+        m.id === tempId ? { ...m, content: `😿 修图遭遇了小挫折...\n原因：${error.message || "未知错误"}\n请稍后重试。` } : m
       ));
     } finally {
       setIsProcessing(false);
@@ -160,7 +164,7 @@ export function ChatController() {
                     : "bg-muted text-foreground"
                 )}
               >
-                {msg.content}
+                <div className="whitespace-pre-wrap">{msg.content}</div>
               </div>
             </div>
           ))}
