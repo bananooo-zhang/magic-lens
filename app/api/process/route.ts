@@ -50,10 +50,8 @@ export async function POST(req: Request) {
     console.log("🤖 AI Response received:", aiContent.substring(0, 100) + "...");
 
     // Parse Image URL from Markdown
-    // Gemini usually returns: "Here is the image: ![alt](https://...)" or just the link
-    // Regex to find markdown image syntax: ![...](url)
     const markdownImageRegex = /!\[.*?\]\((.*?)\)/;
-    const urlRegex = /(https?:\/\/[^\s)]+)/; // Fallback to find any http link
+    const urlRegex = /(https?:\/\/[^\s)]+)/; 
 
     let imageUrl = null;
     
@@ -61,7 +59,6 @@ export async function POST(req: Request) {
     if (mdMatch && mdMatch[1]) {
       imageUrl = mdMatch[1];
     } else {
-      // Fallback: look for raw URL
       const urlMatch = aiContent.match(urlRegex);
       if (urlMatch && urlMatch[0]) {
         imageUrl = urlMatch[0];
@@ -73,19 +70,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "AI processed the request but did not return an image. Response: " + aiContent }, { status: 500 });
     }
 
-    // Since we want to persist this in our "ImageStack" which expects Base64 (to avoid expiring URLs),
-    // we should ideally download it and convert to Base64.
-    // Kapon/Gemini generated URLs might be temporary or public. 
-    // For V1, let's proxy it to avoid CORS issues and convert to Base64.
-    
-    console.log("⬇️ Fetching generated image to convert to Base64...");
-    const imageRes = await fetch(imageUrl);
-    const arrayBuffer = await imageRes.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const base64Image = `data:${imageRes.headers.get('content-type') || 'image/png'};base64,${buffer.toString('base64')}`;
-
+    // Optimization: Directly return URL to client to avoid server timeout.
+    // The client will handle display and optional conversion.
     return NextResponse.json({
-      image: base64Image,
+      image: imageUrl, // Return URL directly
       message: aiContent
     });
 
