@@ -66,8 +66,12 @@ export async function POST(req: Request) {
     }
 
     if (!imageUrl) {
-      console.error("❌ No image found in response");
-      return NextResponse.json({ error: "AI processed the request but did not return an image. Response: " + aiContent }, { status: 500 });
+      console.warn("⚠️ AI did not return an image. It might be a text response.");
+      // Return text content so the client can display the refusal/explanation
+      return NextResponse.json({ 
+        image: null,
+        message: aiContent 
+      });
     }
 
     // Optimization: Directly return URL to client to avoid server timeout.

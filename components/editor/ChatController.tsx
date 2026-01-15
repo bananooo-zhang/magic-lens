@@ -83,6 +83,11 @@ export function ChatController() {
         setMessages(prev => prev.map(m => 
           m.id === tempId ? { ...m, content: '修图完成！你可以继续输入指令进行微调。' } : m
         ));
+      } else if (data.message) {
+         // AI refusal or text-only response
+         setMessages(prev => prev.map(m => 
+          m.id === tempId ? { ...m, content: data.message } : m
+        ));
       } else {
         throw new Error(data.error || '未收到图片数据');
       }
