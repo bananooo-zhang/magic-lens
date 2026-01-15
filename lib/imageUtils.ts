@@ -10,8 +10,14 @@ export async function processImageUpload(file: File): Promise<string> {
   if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
     console.log('🔄 Detected HEIC image, converting to JPEG...');
     try {
-      // Dynamic import to avoid SSR error "window is not defined"
-      const heic2any = (await import('heic2any')).default;
+      // Dynamic import with compatibility check for different bundlers
+      const heic2anyModule = await import('heic2any');
+      const heic2any = heic2anyModule.default || heic2anyModule;
+      
+      // Ensure heic2any is a function
+      if (typeof heic2any !== 'function') {
+        throw new Error('HEIC converter library failed to load');
+      }
 
       const blob = await heic2any({
         blob: file,
@@ -22,9 +28,11 @@ export async function processImageUpload(file: File): Promise<string> {
       // heic2any returns a Blob or Blob[], ensure we get a Blob
       const resultBlob = Array.isArray(blob) ? blob[0] : blob;
       processedFile = new File([resultBlob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('❌ HEIC conversion failed:', error);
-      throw new Error('HEIC 图片转换失败，请尝试上传 JPG 或 PNG 格式。');
+      // Pass the actual error message to the user
+      throw new Error(`HEIC 图片转换失败: ${error.message || '未知错误'}。请尝试上传 JPG 或 PNG。`);
     }
   }
 
