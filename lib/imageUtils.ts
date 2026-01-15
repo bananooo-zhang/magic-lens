@@ -1,5 +1,3 @@
-import heic2any from 'heic2any';
-
 /**
  * 处理上传的图片文件
  * 如果是 HEIC/HEIF 格式，自动转换为 JPEG
@@ -12,6 +10,9 @@ export async function processImageUpload(file: File): Promise<string> {
   if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
     console.log('🔄 Detected HEIC image, converting to JPEG...');
     try {
+      // Dynamic import to avoid SSR error "window is not defined"
+      const heic2any = (await import('heic2any')).default;
+
       const blob = await heic2any({
         blob: file,
         toType: 'image/jpeg',
