@@ -2,25 +2,29 @@ import React, { useState } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { ImageStack } from './ImageStack';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, CheckCircle2, ScanEye } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ScanEye, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { processImageUpload } from '@/lib/imageUtils';
 
 export function CanvasArea() {
   const { originalImage, getCurrentImage, setOriginalImage, reset } = useEditorStore();
   const currentImage = getCurrentImage();
   const [isComparing, setIsComparing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (typeof e.target?.result === 'string') {
-          setOriginalImage(e.target.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        const base64 = await processImageUpload(file);
+        setOriginalImage(base64);
+      } catch (error) {
+        alert(error instanceof Error ? error.message : '上传失败');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -45,21 +49,28 @@ export function CanvasArea() {
       <div className="flex-1 h-full flex items-center justify-center bg-muted/20 relative">
         <div className="text-center p-10 border-2 border-dashed border-muted-foreground/25 rounded-xl hover:border-primary/50 transition-colors bg-background/50">
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UploadCloud className="w-10 h-10 text-primary" />
+            {isUploading ? (
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            ) : (
+              <UploadCloud className="w-10 h-10 text-primary" />
+            )}
           </div>
-          <h2 className="text-xl font-semibold mb-2">上传照片开始修图</h2>
+          <h2 className="text-xl font-semibold mb-2">
+            {isUploading ? "正在处理图片..." : "上传照片开始修图"}
+          </h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-xs mx-auto">
-            支持 JPG, PNG 格式。上传后即可开始对话式修图。
+            支持 JPG, PNG, HEIC 格式。上传后即可开始对话式修图。
           </p>
           <div className="relative">
-            <Button size="lg" className="px-8">
-              选择图片
+            <Button size="lg" className="px-8" disabled={isUploading}>
+              {isUploading ? "请稍候" : "选择图片"}
             </Button>
             <input 
               type="file" 
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               className="absolute inset-0 opacity-0 cursor-pointer"
               onChange={handleUpload}
+              disabled={isUploading}
             />
           </div>
         </div>
@@ -68,7 +79,6 @@ export function CanvasArea() {
   }
 
   // Display State
-  // Determine which image to show: if comparing, show original, else show current
   const displayImage = isComparing ? originalImage : currentImage;
 
   return (

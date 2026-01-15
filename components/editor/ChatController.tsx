@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, ImagePlus, Loader2, Bot, User, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { processImageUpload } from '@/lib/imageUtils';
 
 interface Message {
   id: string;
@@ -100,23 +101,23 @@ export function ChatController() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (typeof e.target?.result === 'string') {
-          // Confirm if overriding
-          if (originalImage && !confirm("上传新图片将清空当前的修图记录，确定吗？")) {
-             return;
-          }
-          setOriginalImage(e.target.result);
-          setMessages([
-            { id: Date.now().toString(), role: 'assistant', content: '图片已加载！试试点击上方的预设词，或者直接告诉我你想怎么修。' }
-          ]);
-        }
-      };
-      reader.readAsDataURL(file);
+      // Confirm if overriding
+      if (originalImage && !confirm("上传新图片将清空当前的修图记录，确定吗？")) {
+         return;
+      }
+      
+      try {
+        const base64 = await processImageUpload(file);
+        setOriginalImage(base64);
+        setMessages([
+          { id: Date.now().toString(), role: 'assistant', content: '图片已加载！试试点击上方的预设词，或者直接告诉我你想怎么修。' }
+        ]);
+      } catch (error) {
+         alert(error instanceof Error ? error.message : '上传失败');
+      }
     }
   };
 
@@ -189,7 +190,7 @@ export function ChatController() {
             type="file" 
             ref={fileInputRef} 
             className="hidden" 
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             onChange={handleFileChange}
           />
           <Button 
