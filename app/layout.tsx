@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"] });
+// Remove Google Fonts dependency to avoid build timeouts
+// const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "AI 魔法修图 | 你的智能修图师",
@@ -17,7 +17,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className={cn(inter.className, "antialiased")}>
+      {/* Use system fonts instead of Inter */}
+      <body className={cn("font-sans antialiased", "bg-background text-foreground")}>
         {children}
       </body>
     </html>
