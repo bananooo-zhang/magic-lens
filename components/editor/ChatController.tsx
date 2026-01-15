@@ -4,7 +4,7 @@ import { PresetChips } from './PresetChips';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, ImagePlus, Loader2, Bot, User } from 'lucide-react';
+import { Send, ImagePlus, Loader2, Bot, User, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
